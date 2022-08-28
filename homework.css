@@ -1,0 +1,75 @@
+html,
+body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+#mainDiv {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: row;
+}
+
+#viewDiv {
+  height: 100%;
+  width: 75%;
+}
+
+#listDiv {
+  height: 100%;
+  width: 25%;
+  overflow: auto;
+  max-height: 1000px;
+}
+
+#listDiv * {
+  box-sizing: border-box;
+}
+
+#listContent {
+  width: 100%;
+}
+
+#listLoadMore {
+  width: 100%;
+  height: 10px;
+}
+
+.list-item {
+  width: 100%;
+  padding: 12px 12px 11px;
+  border-bottom: 1px solid gray;
+}
+
+.list-item:hover {
+  background-color: yellowgreen;
+}
+
+.list-item-name {
+  font-size: 20px;
+  line-height: 32px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.list-item-pop {
+  font-size: 14px;
+  line-height: 22px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.list-item-geometry {
+  font-size: 14px;
+  line-height: 22px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
