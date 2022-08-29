@@ -310,6 +310,12 @@ require([
       const query = citiesLayerView.createQuery();
       query.where = "objectid=" + e.target.dataset.objectid;
       citiesLayerView.queryFeatures(query).then(featureSet => {
+        // due to async callback, prevent multi-item highlighted
+        if (citiesHighlight) {
+          citiesHighlight.remove();
+          citiesHighlight = null;
+        }
+
         // console.log(JSON.stringify(featureSet));
         citiesHighlight = citiesLayerView.highlight(featureSet.features);
       });
