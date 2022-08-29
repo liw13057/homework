@@ -61,17 +61,48 @@ require([
   });
   map.add(citiesLayer);
 
+  // constant definations
+  const QUERY_COUNT_PER_PAGE = 10; // ask for data count per query
+  const LIST_ITEM_HEIGHT = 60; // each item height in px
+  const LIST_LOAD_MORE_HEIGHT = 20; // each item height in px
+  const MAX_VISIBLE_ITEM_COUNT = 30; // max visible item count
+  const PAGE_VISIBLE_ITEM_COUNT = 10; // each page can hold item count
+
   let citiesLayerView = null;
   let citiesHighlight = null; // highlight handler
 
   const listDivNode = document.getElementById("listDiv");
+  const listSpaceNode = document.getElementById("listSpace");
   const listContentNode = document.getElementById("listContent");
   const listLoadMoreNode = document.getElementById("listLoadMore");
+
+  let listItems = []; // list data cache
+  let queryNextPage = 0; // when load more, the next query page no.
+  let queryPending = false; // if a query is in processing
+  let queryMagicWord = 0; // a magic number for checking if response is still valid when returned
+  let queryNoMoreData = false; // all data for current view extent is retrieved
+
+  // visible items
+  let visibleItemStart = 0;
+  let visibleItemCount = 0;
+
   listDivNode.addEventListener("scroll", (e) => {
-    // check list scroll to the bottom
+    // first check list scroll to the bottom
     if (listLoadMoreNode.offsetTop < listDivNode.clientHeight + listDivNode.scrollTop) {
       // console.log("reached bottom!");
       loadMoreCitiesList();
+    } else {
+      // check if visible items need update
+      if (listItems.length <= MAX_VISIBLE_ITEM_COUNT) {
+        // every item has a visible node, no need
+        return;
+      }
+
+      const scrollStart = Math.floor((listDivNode.scrollTop + LIST_ITEM_HEIGHT - 1) / LIST_ITEM_HEIGHT);
+      const newVisibleItemStart = Math.min(Math.max(0, scrollStart - PAGE_VISIBLE_ITEM_COUNT), listItems.length - MAX_VISIBLE_ITEM_COUNT);
+      if (newVisibleItemStart !== visibleItemStart) {
+        updateListVisibleItems(newVisibleItemStart);
+      }
     }
   });
 
@@ -88,18 +119,33 @@ require([
     return result.reverse().join("");
   }
 
-  let queryNextPage = 0; // when load more, the next query page no.
-  const queryCountPerPage = 10; // ask for data count per query
-  let queryPending = false; // if a query is in processing
-  let queryMagicWord = 0; // a magic number for checking if response is still valid when returned
-  let queryNoMoreData = false; // all data for current view extent is retrieved or max count is reached
+  // update list view scroll size and load more indicator text
+  const updateListDecoration = (heightChange = false) => {
+    let nodeText = "Up to load more";
+    if (queryPending) {
+      nodeText = "Loading...";
+    } else if (queryNoMoreData) {
+      nodeText = "No more data!!!";
+    }
+    listLoadMoreNode.innerHTML = nodeText;
+
+    if (heightChange) {
+      const contentHeight = listItems.length * LIST_ITEM_HEIGHT;
+      listLoadMoreNode.style.top = contentHeight + "px";
+      listSpaceNode.style.height = (contentHeight + LIST_LOAD_MORE_HEIGHT) + "px";
+    }
+  }
 
   const reloadCitiesList = () => {
     clearCitiesList();
 
+    listItems = []; // empty cache
     queryNextPage = 0; // restart from page 0
     queryNoMoreData = false;
+    visibleItemStart = 0;
+    visibleItemCount = 0;
     queryCitiesLayer(queryNextPage);
+    updateListDecoration(true);
   };
 
   const loadMoreCitiesList = () => {
@@ -118,34 +164,90 @@ require([
       return;
     }
 
-    // use DocumentFragment for efficiency
-    const fragment = document.createDocumentFragment();
-    features.forEach(feature => {
-      const item = document.createElement("div");
-      item.className = "list-item";
-      item.setAttribute("data-objectid", feature.attributes.objectid);
-
-      const itemName = document.createElement("div");
-      itemName.className = "list-item-name";
-      itemName.appendChild(document.createTextNode(feature.attributes.areaname));
-      item.appendChild(itemName);
-
-      const itemPop = document.createElement("div");
-      itemPop.className = "list-item-pop";
-      itemPop.appendChild(document.createTextNode(formatSeperatorNumber(feature.attributes.pop2000)));
-      item.appendChild(itemPop);
-
-      const itemGeometry = document.createElement("div");
-      itemGeometry.className = "list-item-geometry";
-      itemGeometry.appendChild(document.createTextNode("[" + feature.geometry.x + ", " + feature.geometry.y + "]"));
-      item.appendChild(itemGeometry);
-
-      item.addEventListener("mouseenter", handleMouseEnterItem);
-      item.addEventListener("mouseleave", handleMouseLeaveItem);
-
-      fragment.appendChild(item);
+    const newItems = features.map(feature => {
+      return {
+        objectid: feature.attributes.objectid,
+        areaname: feature.attributes.areaname,
+        population: formatSeperatorNumber(feature.attributes.pop2000),
+        geometry: "[" + feature.geometry.x + ", " + feature.geometry.y + "]",
+      }
     });
-    document.getElementById("listContent").appendChild(fragment);
+    listItems.splice(listItems.length, 0, ...newItems);
+
+    if (visibleItemCount < MAX_VISIBLE_ITEM_COUNT) {
+      visibleItemCount += newItems.length;
+
+      // use DocumentFragment for efficiency
+      const fragment = document.createDocumentFragment();
+      newItems.forEach(itemData => {
+        const itemNode = document.createElement("div");
+        itemNode.className = "list-item";
+        itemNode.setAttribute("data-objectid", itemData.objectid);
+
+        const itemName = document.createElement("div");
+        itemName.className = "list-item-name";
+        itemName.appendChild(document.createTextNode(itemData.areaname));
+        itemNode.appendChild(itemName);
+
+        const itemPop = document.createElement("div");
+        itemPop.className = "list-item-pop";
+        itemPop.appendChild(document.createTextNode(itemData.population));
+        itemNode.appendChild(itemPop);
+
+        const itemGeometry = document.createElement("div");
+        itemGeometry.className = "list-item-geometry";
+        itemGeometry.appendChild(document.createTextNode(itemData.geometry));
+        itemNode.appendChild(itemGeometry);
+
+        itemNode.addEventListener("mouseenter", handleMouseEnterItem);
+        itemNode.addEventListener("mouseleave", handleMouseLeaveItem);
+
+        fragment.appendChild(itemNode);
+      });
+      listContentNode.appendChild(fragment);
+    } else {
+      updateListVisibleItems(visibleItemStart + newItems.length);
+    }
+  };
+
+  const updateListVisibleItems = (newVisibleItemStart) => {
+    if (newVisibleItemStart === visibleItemStart) {
+      return;
+    }
+
+    // in case scroll too fast
+    const replaceCount = Math.min(Math.abs(newVisibleItemStart - visibleItemStart), MAX_VISIBLE_ITEM_COUNT);
+    const front2End = newVisibleItemStart > visibleItemStart; // move front item nodes to the end
+
+    const fragment = document.createDocumentFragment();
+    const itemNodes = listContentNode.getElementsByClassName("list-item");
+
+    for (let i = 0; i < replaceCount; i++) {
+      const itemNode = listContentNode.removeChild(itemNodes[front2End ? (replaceCount - i - 1) : (MAX_VISIBLE_ITEM_COUNT - i - 1)]);
+      const itemData = listItems[front2End ? (visibleItemStart + MAX_VISIBLE_ITEM_COUNT + i) : (newVisibleItemStart + i)];
+
+      itemNode.setAttribute("data-objectid", itemData.objectid);
+
+      const itemName = itemNode.getElementsByClassName("list-item-name")[0];
+      itemName.innerHTML = itemData.areaname;
+
+      const itemPop = itemNode.getElementsByClassName("list-item-pop")[0];
+      itemPop.innerHTML = itemData.population;
+
+      const itemGeometry = itemNode.getElementsByClassName("list-item-geometry")[0];
+      itemGeometry.innerHTML = itemData.geometry;
+
+      fragment.appendChild(itemNode);
+    }
+
+    if (front2End || (replaceCount === MAX_VISIBLE_ITEM_COUNT)) {
+      listContentNode.appendChild(fragment);
+    } else {
+      listContentNode.insertBefore(fragment, itemNodes[0]);
+    }
+
+    visibleItemStart = newVisibleItemStart;
+    listContentNode.style.top = (visibleItemStart * LIST_ITEM_HEIGHT) + 'px';
   };
 
   const clearCitiesList = () => {
@@ -156,12 +258,13 @@ require([
       itemNodes[i].removeEventListener("mouseleave", handleMouseLeaveItem);
     }
     listContentNode.innerHTML = "";
+    listContentNode.style.top = "0px";
   };
 
   function queryCitiesLayer(page) {
     const queryParams = {
-      start: page * queryCountPerPage,
-      num: queryCountPerPage,
+      start: page * QUERY_COUNT_PER_PAGE,
+      num: QUERY_COUNT_PER_PAGE,
       geometry: view.extent,
       outFields: ["*"],
       returnGeometry: true,
@@ -178,17 +281,19 @@ require([
         if (requestMagicWord === queryMagicWord) {
           queryPending = false; // unmark when valid
 
-          if ((featureSet.features.length < queryCountPerPage) || (page === 2)) {
-            // not enough data or reached 30 count
+          if (featureSet.features.length < QUERY_COUNT_PER_PAGE) {
+            // not enough data
             queryNoMoreData = true;
           }
 
           appendCitiesList(featureSet.features);
+          updateListDecoration(true);
         }
       }).catch((error) => {
         // console.log(error.error);
         if (requestMagicWord === queryMagicWord) {
           queryPending = false; // unmark when valid
+          updateListDecoration();
         }
       });
   }

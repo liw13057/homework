@@ -21,29 +21,46 @@ body {
 }
 
 #listDiv {
-  height: 100%;
+  position: relative;
+  height: 600px;
   width: 25%;
   overflow: auto;
-  max-height: 1000px;
+  border: 1px solid black;
 }
 
 #listDiv * {
   box-sizing: border-box;
 }
 
+#listSpace {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  z-index: -1;
+}
+
 #listContent {
-  width: 100%;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
 }
 
 #listLoadMore {
-  width: 100%;
-  height: 10px;
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 20px;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: center;
 }
 
 .list-item {
   width: 100%;
-  padding: 12px 12px 11px;
-  border-bottom: 1px solid gray;
+  padding: 7px 10px 6px;
+  border-bottom: 1px solid lightgray;
 }
 
 .list-item:hover {
@@ -51,24 +68,24 @@ body {
 }
 
 .list-item-name {
-  font-size: 20px;
-  line-height: 32px;
+  font-size: 14px;
+  line-height: 18px;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
 .list-item-pop {
-  font-size: 14px;
-  line-height: 22px;
+  font-size: 12px;
+  line-height: 14px;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
 .list-item-geometry {
-  font-size: 14px;
-  line-height: 22px;
+  font-size: 12px;
+  line-height: 14px;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
