@@ -65,6 +65,7 @@ require([
   const QUERY_COUNT_PER_PAGE = 10; // ask for data count per query
   const LIST_ITEM_HEIGHT = 60; // each item height in px
   const LIST_LOAD_MORE_HEIGHT = 20; // each item height in px
+  const LIST_LOAD_MORE_TRIGGER_THRESHOLD = 18; // scroll up threshold to trigger load more
   const MAX_VISIBLE_ITEM_COUNT = 30; // max visible item count
   const PAGE_VISIBLE_ITEM_COUNT = 10; // each page can hold item count
 
@@ -88,7 +89,7 @@ require([
 
   listDivNode.addEventListener("scroll", (e) => {
     // first check list scroll to the bottom
-    if (listLoadMoreNode.offsetTop < listDivNode.clientHeight + listDivNode.scrollTop) {
+    if (listLoadMoreNode.offsetTop < listDivNode.clientHeight + listDivNode.scrollTop - LIST_LOAD_MORE_TRIGGER_THRESHOLD) {
       // console.log("reached bottom!");
       loadMoreCitiesList();
     } else {
@@ -127,7 +128,7 @@ require([
     } else if (queryNoMoreData) {
       nodeText = "No more data!!!";
     }
-    listLoadMoreNode.innerHTML = nodeText;
+    listLoadMoreNode.innerText = nodeText;
 
     if (heightChange) {
       const contentHeight = listItems.length * LIST_ITEM_HEIGHT;
@@ -232,13 +233,13 @@ require([
       itemNode.setAttribute("data-objectid", itemData.objectid);
 
       const itemName = itemNode.getElementsByClassName("list-item-name")[0];
-      itemName.innerHTML = itemData.areaname;
+      itemName.innerText = itemData.areaname;
 
       const itemPop = itemNode.getElementsByClassName("list-item-pop")[0];
-      itemPop.innerHTML = itemData.population;
+      itemPop.innerText = itemData.population;
 
       const itemGeometry = itemNode.getElementsByClassName("list-item-geometry")[0];
-      itemGeometry.innerHTML = itemData.geometry;
+      itemGeometry.innerText = itemData.geometry;
 
       fragment.appendChild(itemNode);
     }
@@ -280,6 +281,7 @@ require([
     const requestMagicWord = queryMagicWord;
 
     queryPending = true; // mark as processing
+    updateListDecoration();
 
     citiesLayer.queryFeatures(queryParams)
       .then((featureSet) => {
