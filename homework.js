@@ -121,7 +121,7 @@ require([
 
   // update list view scroll size and load more indicator text
   const updateListDecoration = (heightChange = false) => {
-    let nodeText = "Up to load more";
+    let nodeText = "Up to load more data";
     if (queryPending) {
       nodeText = "Loading...";
     } else if (queryNoMoreData) {
@@ -215,6 +215,9 @@ require([
       return;
     }
 
+    // optimize dom nodes replacement
+    listContentNode.style.display = "none";
+
     // in case scroll too fast
     const replaceCount = Math.min(Math.abs(newVisibleItemStart - visibleItemStart), MAX_VISIBLE_ITEM_COUNT);
     const front2End = newVisibleItemStart > visibleItemStart; // move front item nodes to the end
@@ -248,6 +251,8 @@ require([
 
     visibleItemStart = newVisibleItemStart;
     listContentNode.style.top = (visibleItemStart * LIST_ITEM_HEIGHT) + 'px';
+
+    listContentNode.style.display = "block";
   };
 
   const clearCitiesList = () => {
