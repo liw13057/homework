@@ -34,7 +34,9 @@ View：视图，通过不同的layerView显示图层，处理用户交互等各�
 - 创建View时区分2D/3D：MapView 2D，SceneView 3D
 - WebMap、WebScene：预配置，便于共享、复用。
 Renderer：FeatureLayer内的一个feature展示到LayerView上的方式。
+
 ![Map & MapView](https://raw.githubusercontent.com/liwufu163/homework/main/images/map-mapview.png)
+
 ![Map View Layer](https://raw.githubusercontent.com/liwufu163/homework/main/images/map-view-layer.png)
 
 ### 类模型
@@ -119,7 +121,9 @@ LoadMore可能被触发多次，若当前已有请求在进行中，则后继的
 
 ### 优化
 #### 虚拟列表
+
 ![Virtual List](https://raw.githubusercontent.com/liwufu163/homework/main/images/virtual-list.png)
+
 目的：解决DOM节点过多导致性能下降问题
 实现要点
 1、子div相当父div进行定位，通过css：listDiv的position: relative;，子div为position: absolute;（相对第一个非static定位的父节点）
